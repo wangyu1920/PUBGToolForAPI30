@@ -1,0 +1,12 @@
+<resources>
+    <string name="app_name">FileSave</string>
+    <string name="GetPermission">授予读写权限</string>
+    <string name="ShowCode">显示代码</string>
+    <string name="WriteCode">写入代码</string>
+    <string name="ChangeCode">自定义代码</string>
+    <string name="WriteCodeHere">代码放这里\n不会改别乱改，后果自负！建议修改次数过多时清除应用数据在修改</string>
+    <string name="Save">保存</string>
+    <string name="Cancel">取消</string>
+    <string name="ResetCode">重置代码</string>
+    <string name="QuickMode">快速模式</string>
+</resources>
