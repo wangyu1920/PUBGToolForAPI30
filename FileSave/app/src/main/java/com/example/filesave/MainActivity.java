@@ -67,6 +67,8 @@ public class MainActivity extends FragmentActivity {
         setQuick = findViewById(R.id.Button_setQuick);
         //  《获取权限》按钮的点击监听------------------------------------------------------------
         getPermission.setOnClickListener(v -> {
+            //创建一个记录日志的StringBuilder
+            StringBuilder builder = new StringBuilder();
             //获取读写权限并判断是否成功
             GetPermission.verifyStoragePermissions(this);
             judgePermission();
@@ -78,16 +80,19 @@ public class MainActivity extends FragmentActivity {
             if (!XXPermissions.isGranted(this, new String[]{
                     "android.permission.READ_EXTERNAL_STORAGE",
                     "android.permission.WRITE_EXTERNAL_STORAGE"}
-                    )) { Log.e("动态权限获取错误", "读写权限获取失败");
+                    )) {
+                Log.e("动态权限获取错误", "读写权限获取失败");
+                builder.append("动态权限获取错误:读写权限获取失败\n");
             }
             if (!XXPermissions.isGranted(this,
                     "android.permission.MOUNT_UNMOUNT_FILESYSTEMS"
-            )) { Log.e("动态权限获取错误", "移动和修改权限获取失败");
+            )) {
+                Log.e("动态权限获取错误", "移动和修改权限获取失败");
             }
             //代码文件自动写入内部存储
             try {
                 InputStream inputStream = getResources().openRawResource(R.raw.code);
-                FileOutputStream fos = openFileOutput("UserCustom.ini",MODE_PRIVATE);
+                FileOutputStream fos = openFileOutput("UserCustom.txt",MODE_PRIVATE);
                 int readNum;
                 byte[] bytes=new byte[1024];
                 while (-1 != (readNum = inputStream.read(bytes))) {
@@ -98,39 +103,54 @@ public class MainActivity extends FragmentActivity {
                 inputStream.close();
             } catch (IOException e) {
                 e.printStackTrace();
+                builder.append("代码写入应用存储失败\n");
             }
             //判断是否有安卓11data的访问权限，没有则申请
             if (isGrant(this)) {
-                Toast.makeText(this, "授权成功", Toast.LENGTH_SHORT).show();
-                return;
+                if (fileCanUse(getDocumentFile(this, "Android/data"))) {
+                    builder.append("data目录可读写\n");
+                    if (fileCanUse(getDocumentFile(this,
+                            "Android/data/com.tencent.tmgp.pubgmhd/files/UE4Game/ShadowTrackerExtra/ShadowTrackerExtra/Saved/Config/Android/UserCustom.ini"))) {
+                        builder.append("UserCustom.ini可读写\n");
+                    } else {
+                        builder.append("访问UserCustom.ini错误：不可写\n");
+                    }
+                    Toast.makeText(this, "授权成功", Toast.LENGTH_SHORT).show();
+                    showCodeOnTextView(builder.toString());
+                    return;
+                }else{
+                    builder.append("访问data目录错误：data目录未授权\n");
+                }
             }
             //      申请安卓11data的访问权限
             startForRoot(this,1);
+            showCodeOnTextView(builder.toString());
         });
         //  《显示代码》按钮的点击监听------------------------------------------------------------
         showCode.setOnClickListener(v -> {
-            //      读取代码，显示在屏幕
             InputStream inputStream;
             try {
-                inputStream= openFileInput("UserCustom.ini");
+                inputStream= openFileInput("UserCustom.txt");
             } catch (FileNotFoundException e) {
                 inputStream = getResources().openRawResource(R.raw.code);
             }
-            InputStreamReader reader = new InputStreamReader(inputStream);
-            try {
-                int readNum;
-                StringBuilder builder = new StringBuilder();
-                char[] chars = new char[4];
-                while (-1 != (readNum = reader.read(chars))) {
-                    builder.append(chars,0,readNum);
-                }
-                ((TextView)findViewById(R.id.Text_ShowCode)).setText(builder);
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
+            showCodeOnTextView(inputStream);
         });
         //  写入代码文件按钮监听------------------------------------------------------------
-        writeCode.setOnClickListener(v -> writeCodeMethod());
+        writeCode.setOnClickListener(v -> {
+            writeCodeMethod();
+            DocumentFile documentFile = getDocumentFile(this,
+                    "Android/data/com.tencent.tmgp.pubgmhd/files/UE4Game/ShadowTrackerExtra/ShadowTrackerExtra/Saved/Config/Android/UserCustom.ini");
+
+            assert documentFile != null;
+            try {
+                FileInputStream inputStream = (FileInputStream) getContentResolver().openInputStream(documentFile.getUri());
+                showCodeOnTextView(inputStream);
+            } catch (FileNotFoundException e) {
+                e.printStackTrace();
+            }
+
+        });
         //自定义代码按钮监听设置-->打开新Activity-------------------------------------------
         changeCode.setOnClickListener(v ->
                 startActivity(new Intent(this, SetCodeActivity.class)));
@@ -147,16 +167,14 @@ public class MainActivity extends FragmentActivity {
             if (!XXPermissions.isGranted(this, new String[]{
                     "android.permission.READ_EXTERNAL_STORAGE",
                     "android.permission.WRITE_EXTERNAL_STORAGE"}
-            )) { Log.e("动态权限获取错误", "读写权限获取失败");
-            }
+            )) { Log.e("动态权限获取错误", "读写权限获取失败"); }
             if (!XXPermissions.isGranted(this,
                     "android.permission.MOUNT_UNMOUNT_FILESYSTEMS"
-            )) { Log.e("动态权限获取错误", "移动和修改权限获取失败");
-            }
+            )) { Log.e("动态权限获取错误", "移动和修改权限获取失败"); }
             //代码文件自动写入内部存储
             try {
                 InputStream inputStream = getResources().openRawResource(R.raw.code);
-                FileOutputStream fos = openFileOutput("UserCustom.ini",MODE_PRIVATE);
+                FileOutputStream fos = openFileOutput("UserCustom.txt",MODE_PRIVATE);
                 int readNum;
                 byte[] bytes=new byte[1024];
                 while (-1 != (readNum = inputStream.read(bytes))) {
@@ -218,6 +236,25 @@ public class MainActivity extends FragmentActivity {
 
 
     }
+    //      读取代码，显示在屏幕
+    private void showCodeOnTextView(InputStream inputStream){
+        InputStreamReader reader = new InputStreamReader(inputStream);
+        try {
+            int readNum;
+            StringBuilder builder = new StringBuilder();
+            char[] chars = new char[4];
+            while (-1 != (readNum = reader.read(chars))) {
+                builder.append(chars,0,readNum);
+            }
+            ((TextView)findViewById(R.id.Text_ShowCode)).setText(builder);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+    private void showCodeOnTextView(String s){
+        System.out.println(s);
+        ((TextView)findViewById(R.id.Text_ShowCode)).setText(s);
+    }
 
     private void writeCodeMethod() {
         //设置文件地址
@@ -228,30 +265,28 @@ public class MainActivity extends FragmentActivity {
         if (!fileCanUse(documentFile)) { return; }
         //写入
         try {
-            FileInputStream inputStream = openFileInput("UserCustom.ini");
-            InputStream inputStream1 = getContentResolver().openInputStream(documentFile.getUri());
-            int size=inputStream1.available();
-            inputStream1.close();
-            OutputStream os=getContentResolver().openOutputStream(
-                    documentFile.getUri());
+            FileInputStream inputStream = openFileInput("UserCustom.txt");//代码输入流
+            OutputStream os=getContentResolver().openOutputStream(documentFile.getUri());//写入流
+            InputStream inputStream1 = getContentResolver().openInputStream(documentFile.getUri());//原来的代码文件，获取行数
             byte[] bytes = new byte[1024 * 512];
+            byte[] bytes1 = new byte[1024 * 512];
             int data=inputStream.read(bytes);
-            size-=data;
+            int oldData = inputStream1.read(bytes1);
             while ( data>0) {
                 os.write(bytes,0,data);
                 data=inputStream.read(bytes);
-                size-=data;
+                oldData=inputStream1.read(bytes1);
             }
-            if (size > 0) {
-                os.write(10);
-                size--;
-            }
-            for (; size > 0; size--) {
-                os.write(32);
+            if (oldData != -1) {
+                int next =inputStream1.available();
+                for (; next > 0; next--) {
+                    os.write(10);
+                }
             }
             os.flush();
             os.close();
             inputStream.close();
+            inputStream1.close();
         } catch (IOException e) {
             e.printStackTrace();
         }
