@@ -11,6 +11,10 @@
         android:gravity="center_horizontal"
         android:orientation="vertical">
 
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/WriteCodeHere"/>
         <EditText
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -18,9 +22,9 @@
             android:singleLine="false"
             android:maxLines="9999"
             android:scrollHorizontally="false"
-            android:hint="@string/WriteCodeHere"
             android:importantForAutofill="no"
-            android:inputType="textMultiLine" />
+            android:inputType="textMultiLine"
+            tools:ignore="LabelFor" />
 
         <LinearLayout
             android:layout_width="match_parent"

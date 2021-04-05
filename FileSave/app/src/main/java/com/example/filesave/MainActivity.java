@@ -9,6 +9,7 @@ import android.content.Intent;
 import android.content.UriPermission;
 import android.content.pm.PackageManager;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
 import android.provider.DocumentsContract;
@@ -34,6 +35,7 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 
+import SetCode.SetCode;
 import permission.GetPermission;
 
 public class MainActivity extends FragmentActivity {
@@ -43,6 +45,7 @@ public class MainActivity extends FragmentActivity {
     Button changeCode;
     Button resetCode;
     Button setQuick;
+    Button getCode;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -65,6 +68,14 @@ public class MainActivity extends FragmentActivity {
         changeCode = findViewById(R.id.Button_ChangeCode);
         resetCode = findViewById(R.id.Button_ResetCode);
         setQuick = findViewById(R.id.Button_setQuick);
+        getCode = findViewById(R.id.Button_GetCode);
+        //在屏幕上显示帮助文字
+        showCodeOnTextView("首次使用请先授权直至显示可读写\n"+
+                "为保证对您的设备的兼容，建议您先用其他画质助手修改好画质，" +
+                "再进入本软件点击‘获取和平精英文件中的代码’来设置代码，之后每次使用该软件，" +
+                "只需要点击‘写入代码’来写入代码即可，也可以打开快速模式直接一键启动\n"+
+                "注意：默认代码只兼容安卓11，对安卓10设备无效，"+"该软件虽然可用于安卓10设备" +
+                "但内部逻辑均针对安卓11设置，软件在安卓10上运行部分逻辑可能异常");
         //  《获取权限》按钮的点击监听------------------------------------------------------------
         getPermission.setOnClickListener(v -> {
             //创建一个记录日志的StringBuilder
@@ -89,22 +100,6 @@ public class MainActivity extends FragmentActivity {
             )) {
                 Log.e("动态权限获取错误", "移动和修改权限获取失败");
             }
-            //代码文件自动写入内部存储
-            try {
-                InputStream inputStream = getResources().openRawResource(R.raw.code);
-                FileOutputStream fos = openFileOutput("UserCustom.txt",MODE_PRIVATE);
-                int readNum;
-                byte[] bytes=new byte[1024];
-                while (-1 != (readNum = inputStream.read(bytes))) {
-                    fos.write(bytes,0,readNum);
-                }
-                fos.flush();
-                fos.close();
-                inputStream.close();
-            } catch (IOException e) {
-                e.printStackTrace();
-                builder.append("代码写入应用存储失败\n");
-            }
             //判断是否有安卓11data的访问权限，没有则申请
             if (isGrant(this)) {
                 if (fileCanUse(getDocumentFile(this, "Android/data"))) {
@@ -114,6 +109,8 @@ public class MainActivity extends FragmentActivity {
                         builder.append("UserCustom.ini可读写\n");
                     } else {
                         builder.append("访问UserCustom.ini错误：不可写\n");
+                        showCodeOnTextView(builder.toString());
+                        return;
                     }
                     Toast.makeText(this, "授权成功", Toast.LENGTH_SHORT).show();
                     showCodeOnTextView(builder.toString());
@@ -128,24 +125,54 @@ public class MainActivity extends FragmentActivity {
         });
         //  《显示代码》按钮的点击监听------------------------------------------------------------
         showCode.setOnClickListener(v -> {
-            InputStream inputStream;
+            InputStream[] inputStreams;
             try {
-                inputStream= openFileInput("UserCustom.txt");
+                inputStreams=new FileInputStream[]{
+                        openFileInput("BackUp.txt"),
+                        openFileInput("Profile.txt"),
+                        openFileInput("canChange.txt"),
+                };
             } catch (FileNotFoundException e) {
-                inputStream = getResources().openRawResource(R.raw.code);
+                inputStreams=new InputStream[]{
+                        getResources().openRawResource(R.raw.code_1080p_xianyan_anti)
+                };
             }
-            showCodeOnTextView(inputStream);
+            showCodeOnTextView(inputStreams);
         });
         //  写入代码文件按钮监听------------------------------------------------------------
         writeCode.setOnClickListener(v -> {
-            writeCodeMethod();
+            try {
+                if (Build.VERSION.SDK_INT == 30) {
+                    writeCodeMethod(getContentResolver().openOutputStream(getDocumentFile(this,
+                            "Android/data/com.tencent.tmgp.pubgmhd/files/UE4Game/ShadowTrackerEx" +
+                                    "tra/ShadowTrackerExtra/Saved/Config/Android/UserCustom.ini").getUri()),
+                            new InputStream[]{
+                                    openFileInput("BackUp.txt"),
+                                    openFileInput("Profile.txt"),
+                                    openFileInput("canChange.txt")
+                            });
+                } else {
+                    writeCodeMethod(getContentResolver().openOutputStream(getDocumentFile(this,
+                            "Android/data/com.tencent.tmgp.pubgmhd/files/UE4Game/ShadowTrackerEx" +
+                                    "tra/ShadowTrackerExtra/Saved/Config/Android/UserCustom.ini").getUri()),
+                            new InputStream[]{
+                                    openFileInput("Profile.txt"),
+                                    openFileInput("canChange.txt"),
+                                    openFileInput("BackUp.txt")
+                            });
+                }
+
+            } catch (FileNotFoundException e) {
+                e.printStackTrace();
+                Toast.makeText(this, "写入失败：未知错误", Toast.LENGTH_SHORT).show();
+                return;
+            }
             DocumentFile documentFile = getDocumentFile(this,
                     "Android/data/com.tencent.tmgp.pubgmhd/files/UE4Game/ShadowTrackerExtra/ShadowTrackerExtra/Saved/Config/Android/UserCustom.ini");
-
             assert documentFile != null;
             try {
                 FileInputStream inputStream = (FileInputStream) getContentResolver().openInputStream(documentFile.getUri());
-                showCodeOnTextView(inputStream);
+                showCodeOnTextView(new InputStream[]{inputStream});
             } catch (FileNotFoundException e) {
                 e.printStackTrace();
             }
@@ -173,20 +200,17 @@ public class MainActivity extends FragmentActivity {
             )) { Log.e("动态权限获取错误", "移动和修改权限获取失败"); }
             //代码文件自动写入内部存储
             try {
-                InputStream inputStream = getResources().openRawResource(R.raw.code);
-                FileOutputStream fos = openFileOutput("UserCustom.txt",MODE_PRIVATE);
-                int readNum;
-                byte[] bytes=new byte[1024];
-                while (-1 != (readNum = inputStream.read(bytes))) {
-                    fos.write(bytes,0,readNum);
-                }
-                fos.flush();
-                fos.close();
-                inputStream.close();
-            } catch (IOException e) {
+                SetCode.getBackUpCode(getResources().openRawResource(R.raw.const_code),
+                        openFileOutput("BackUp.txt", MODE_PRIVATE));
+                SetCode.getProfileCode(getResources().openRawResource(R.raw.const_code),
+                        openFileOutput("Profile.txt",MODE_PRIVATE),
+                        openFileOutput("canChange.txt",MODE_PRIVATE)
+                        );
+            } catch (FileNotFoundException e) {
                 e.printStackTrace();
             }
-            Toast.makeText(this, "重置成功", Toast.LENGTH_SHORT).show();
+            showCodeOnTextView("默认代码是1080p分辨率，抗锯齿，鲜艳\n"+"默认代码仅支持安卓11");
+            Toast.makeText(this, "重置并使用默认代码成功", Toast.LENGTH_SHORT).show();
         });
         //快速模式监听器-->弹出警告对话框等等--------------------------------------------------
         setQuick.setOnClickListener(v -> new AlertDialog.Builder(MainActivity.this)
@@ -206,7 +230,47 @@ public class MainActivity extends FragmentActivity {
                     }
                 })
                 .setNegativeButton("取消",null).show());
-
+        //获取代码按钮监听器-->获取和平精英UserCustom.ini文件中的代码
+        getCode.setOnClickListener(v -> {
+            //代码文件自动写入内部存储
+            try {
+                DocumentFile documentFile = getDocumentFile(this,
+                        "Android/data/com.tencent.tmgp.pubgmhd/files/UE4Game/ShadowTrackerExtra/ShadowTrackerExtra/Saved/Config/Android/UserCustom.ini");
+                assert documentFile != null;
+                FileInputStream inputStream = (FileInputStream) getContentResolver().openInputStream(documentFile.getUri());
+                FileOutputStream backUp = openFileOutput("BackUp.txt",MODE_PRIVATE);
+                FileOutputStream profile = openFileOutput("Profile.txt",MODE_PRIVATE);
+                FileOutputStream canChange = openFileOutput("canChange.txt",MODE_PRIVATE);
+                if (!SetCode.getBackUpCode(inputStream, backUp)) {
+                    showCodeOnTextView("无法获取代码文件");
+                    backUp.flush();
+                    profile.flush();
+                    canChange.flush();
+                    backUp.close();
+                    profile.close();
+                    canChange.close();
+                    inputStream.close();
+                    return;
+                }
+                inputStream.close();
+                inputStream = (FileInputStream) getContentResolver().openInputStream(documentFile.getUri());
+                SetCode.getProfileCode(inputStream, profile, canChange);
+                backUp.flush();
+                profile.flush();
+                canChange.flush();
+                backUp.close();
+                profile.close();
+                canChange.close();
+                inputStream.close();
+                showCodeOnTextView(new FileInputStream[]{
+                        openFileInput("BackUp.txt"),
+                        openFileInput("Profile.txt"),
+                        openFileInput("canChange.txt")});
+            } catch (IOException e) {
+                e.printStackTrace();
+                showCodeOnTextView("获取代码失败");
+            }
+        });
 
 
 
@@ -237,26 +301,37 @@ public class MainActivity extends FragmentActivity {
 
     }
     //      读取代码，显示在屏幕
-    private void showCodeOnTextView(InputStream inputStream){
-        InputStreamReader reader = new InputStreamReader(inputStream);
-        try {
-            int readNum;
-            StringBuilder builder = new StringBuilder();
-            char[] chars = new char[4];
-            while (-1 != (readNum = reader.read(chars))) {
-                builder.append(chars,0,readNum);
+    private void showCodeOnTextView(InputStream[] inputStreams){
+        StringBuilder builder = new StringBuilder();
+        for (InputStream inputStream : inputStreams) {
+            InputStreamReader reader = new InputStreamReader(inputStream);
+            try {
+                int readNum;
+                char[] chars = new char[4];
+                while (-1 != (readNum = reader.read(chars))) {
+                    builder.append(chars,0,readNum);
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+                builder.append(e);
+            }finally {
+                try {
+                    reader.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                    builder.append(e);
+                }
             }
-            ((TextView)findViewById(R.id.Text_ShowCode)).setText(builder);
-        } catch (IOException e) {
-            e.printStackTrace();
         }
+        ((TextView)findViewById(R.id.Text_ShowCode)).setText(builder);
+
     }
     private void showCodeOnTextView(String s){
-        System.out.println(s);
         ((TextView)findViewById(R.id.Text_ShowCode)).setText(s);
     }
-
-    private void writeCodeMethod() {
+    //写入代码
+    private void writeCodeMethod(OutputStream outputStream,
+                                 InputStream[] inputStreams) {
         //设置文件地址
         DocumentFile documentFile = getDocumentFile(this,
                 "Android/data/com.tencent.tmgp.pubgmhd/files/UE4Game/ShadowTrackerExtra/ShadowTrackerExtra/Saved/Config/Android/UserCustom.ini");
@@ -265,26 +340,37 @@ public class MainActivity extends FragmentActivity {
         if (!fileCanUse(documentFile)) { return; }
         //写入
         try {
+            FileOutputStream outputStream1 = openFileOutput("UserCustom.txt", MODE_PRIVATE);
+            for (InputStream fis : inputStreams) {
+                byte[] bytes = new byte[1024];
+                int readNum = fis.read(bytes);
+                while (readNum > 0) {
+                    outputStream1.write(bytes, 0, readNum);
+                    readNum=fis.read(bytes);
+                }
+                fis.close();
+            }
+            outputStream1.flush();
+            outputStream1.close();
             FileInputStream inputStream = openFileInput("UserCustom.txt");//代码输入流
-            OutputStream os=getContentResolver().openOutputStream(documentFile.getUri());//写入流
             InputStream inputStream1 = getContentResolver().openInputStream(documentFile.getUri());//原来的代码文件，获取行数
             byte[] bytes = new byte[1024 * 512];
             byte[] bytes1 = new byte[1024 * 512];
             int data=inputStream.read(bytes);
             int oldData = inputStream1.read(bytes1);
             while ( data>0) {
-                os.write(bytes,0,data);
+                outputStream.write(bytes,0,data);
                 data=inputStream.read(bytes);
                 oldData=inputStream1.read(bytes1);
             }
             if (oldData != -1) {
                 int next =inputStream1.available();
                 for (; next > 0; next--) {
-                    os.write(10);
+                    outputStream.write(10);
                 }
             }
-            os.flush();
-            os.close();
+            outputStream.flush();
+            outputStream.close();
             inputStream.close();
             inputStream1.close();
         } catch (IOException e) {
@@ -295,7 +381,20 @@ public class MainActivity extends FragmentActivity {
     }
 
     private void quickStartGame() {
-        writeCodeMethod();
+        try {
+            writeCodeMethod(getContentResolver().openOutputStream(getDocumentFile(this,
+                    "Android/data/com.tencent.tmgp.pubgmhd/files/UE4Game/ShadowTrackerEx" +
+                            "tra/ShadowTrackerExtra/Saved/Config/Android/UserCustom.ini").getUri()),
+                    new InputStream[]{
+                            openFileInput("BackUp.txt"),
+                            openFileInput("Profile.txt"),
+                            openFileInput("canChange.txt")
+                    });
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+            Toast.makeText(this, "写入失败：未知错误", Toast.LENGTH_SHORT).show();
+            return;
+        }
         Intent intent = new Intent();
         intent.setAction(Intent.ACTION_VIEW);
         intent.setComponent(new ComponentName("com.tencent.tmgp.pubgmhd",

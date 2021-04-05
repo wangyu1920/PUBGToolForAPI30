@@ -4,9 +4,10 @@
     <string name="ShowCode">显示代码</string>
     <string name="WriteCode">写入代码</string>
     <string name="ChangeCode">自定义代码</string>
-    <string name="WriteCodeHere">代码放这里\n不会改别乱改，后果自负！建议修改次数过多时清除应用数据在修改</string>
+    <string name="WriteCodeHere">代码在下面输入框里编辑，这几行代码包括：帧率(所有画质的帧率)，分辨率，画面风格，画面品质(包括经典和团竞两条)，抗锯齿的代码，为了避免不正常修改导致的问题，仅支持这些代码的修改，具体修改方法请自查</string>
     <string name="Save">保存</string>
     <string name="Cancel">取消</string>
-    <string name="ResetCode">重置代码</string>
+    <string name="ResetCode">使用默认代码</string>
     <string name="QuickMode">快速模式</string>
+    <string name="GetCode">获取和平精英文件中的代码</string>
 </resources>
