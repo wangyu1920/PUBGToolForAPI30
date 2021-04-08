@@ -54,8 +54,6 @@ public class SetCodeActivity extends AppCompatActivity {
             }
             finish();
         });
-        cancel.setOnClickListener(v -> {
-            finish();
-        });
+        cancel.setOnClickListener(v -> finish());
     }
 }

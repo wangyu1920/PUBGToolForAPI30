@@ -66,11 +66,11 @@ public class SetCode {
                 }
             }
             if (line != null) {
-                outputStream.write("[UserCustom DeviceProfile]\r\n".getBytes());
+                outputStream.write("[UserCustom DeviceProfile]".getBytes());
             }
             while (null != (line=bufferedReader.readLine())&& !line.equals("[BackUp DeviceProfile]")) {
                 if (canChang(line)) { canChangeCode.write((line+"\r\n").getBytes()); }else{
-                    outputStream.write((line+"\r\n").getBytes());
+                    outputStream.write(("\r\n"+line).getBytes());
                 }
 
             }
