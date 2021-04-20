@@ -25,7 +25,21 @@
             android:importantForAutofill="no"
             android:inputType="textMultiLine"
             tools:ignore="LabelFor" />
-
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="  不建议修改的其他代码："
+            tools:ignore="HardcodedText" />
+        <EditText
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:id="@+id/EditText_Profile"
+            android:singleLine="false"
+            android:maxLines="9999"
+            android:scrollHorizontally="false"
+            android:importantForAutofill="no"
+            android:inputType="textMultiLine"
+            tools:ignore="LabelFor" />
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"

@@ -7,8 +7,9 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 
 public class SetCode {
-
-
+    public static final String BackUpFile = "BackUp.txt";
+    public static final String canChangeFile = "canChange.txt";
+    public static final String ProfileFile = "Profile.txt";
 
     public static boolean getBackUpCode( InputStream inputStream,
     OutputStream outputStream) {

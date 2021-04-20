@@ -4,12 +4,19 @@
     <string name="ShowCode">显示代码</string>
     <string name="WriteCode">写入代码</string>
     <string name="ChangeCode">自定义代码</string>
-    <string name="WriteCodeHere">代码在下面输入框里编辑，这几行代码包括：帧率(所有画质的帧率)，分辨率，画面风格，画面品质(包括经典和团竞两条)，抗锯齿的代码，为了避免不正常修改导致的问题，仅支持这些代码的修改，具体修改方法请自查</string>
+    <string name="WriteCodeHere" translatable="false">代码在下面输入框里编辑，这几行代码包括：帧率(所有画质的帧率)，分辨率，画面风格，画面品质(包括经典和团竞两条)，抗锯齿的代码，具体修改方法请自查，最后一行必须是空行
+                  一些代码提示：
+                帧率：+CVars=0B57292C3B3E3D1C0F101A1C3F292A
+                画质：+CVars=0B572C0A1C0B280C1815100D002A1C0D0D10171E
+                画面风格：+CVars=0B572C0A1C0B313D2B2A1C0D0D10171E44
+                分辨率：+CVars=0B5734161B10151C3A16170D1C170D2A1A18151C3F181A0D160B44
+                抗锯齿：+CVars=0B572C0A1C0B342A38382A1C0D0D10171E44
+                等于号：44    0：49   1：48</string>
     <string name="Save">保存</string>
     <string name="Cancel">取消</string>
     <string name="ResetCode">使用默认代码</string>
     <string name="QuickMode">快速模式</string>
-    <string name="GetCode">获取和平精英文件中的代码</string>
+    <string name="GetCode">获取和平精英的代码</string>
     <string name="Code">[BackUp DeviceProfile]
 +CVars=0B5734161B10151C3A16170D1C170D2A1A18151C3F181A0D160B4448574C
 +CVars=0B572A0D180D101A341C0A1135363D3D100A0D18171A1C2A1A18151C44495741
@@ -84,5 +91,6 @@
 
 
 </string>
+    <string name="DeleteCloths">删除服饰资源</string>
 
 </resources>

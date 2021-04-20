@@ -1,13 +1,16 @@
 package com.example.filesave;
 
+import android.annotation.SuppressLint;
 import android.app.AlertDialog;
 import android.content.ComponentName;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
 import android.widget.Button;
+import android.widget.CheckBox;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -30,6 +33,7 @@ import SetCode.SetCode;
 import permission.GetPermissionAndTools;
 
 public class MainActivity extends FragmentActivity {
+    private final String isDelete_Key = "isDelete";
     Button getPermission;
     Button showCode;
     Button writeCode;
@@ -37,20 +41,29 @@ public class MainActivity extends FragmentActivity {
     Button resetCode;
     Button setQuick;
     Button getCode;
+    CheckBox isDelete;
+    @SuppressLint("CommitPrefEdits")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        //获取简单存储器  （存储是否删除服饰资源包的数据）
+        SharedPreferences preferences = getSharedPreferences(isDelete_Key, MODE_PRIVATE);
         //快速模式检测和执行
         try {
             FileInputStream fis=openFileInput("isQuick");
             InputStreamReader isQuick = new InputStreamReader(fis);
             int is=isQuick.read();
             if (is == 1) {
-                quickStartGame();
+                if (preferences.getBoolean(isDelete_Key, false)) {
+                    System.out.println("删除执行");
+                    setContentView(R.layout.activity_main);
+                    quickStartGame();
+                    deletePak();
+                }
                 finish();
             }
-        } catch (IOException e) {
-            e.printStackTrace();
+        } catch (IOException ignore) {
+            System.out.println("没有开启快速模式");
         }
         setContentView(R.layout.activity_main);
         //    初始化按钮控件
@@ -61,6 +74,15 @@ public class MainActivity extends FragmentActivity {
         resetCode = findViewById(R.id.Button_ResetCode);
         setQuick = findViewById(R.id.Button_setQuick);
         getCode = findViewById(R.id.Button_GetCode);
+        isDelete = (CheckBox) findViewById(R.id.isDelete);
+        isDelete.setChecked(preferences.getBoolean(isDelete_Key,false));
+        isDelete.setOnCheckedChangeListener((buttonView, isChecked) -> {
+            preferences.edit().putBoolean(isDelete_Key, isChecked).apply();
+            showCodeOnTextView("删除服饰资源包需要较长时间\n"+
+                    "此操作只能删除而不能阻止和平精英再次下载，" +
+                    "无root权限可以尝试采用修改host拦截服饰资源数据来阻止和平精英自动下载服饰资源，" +
+                    "具体方法自查");
+        });
         //在屏幕上显示帮助文字
         showCodeOnTextView("一款安卓11一键修改和平精英画质的应用\n\n" +
                 "   帮助：\n"+"授予读写权限：\n点击将会打开系统文件管理器，需要点击下方的授权按钮\n\n"+
@@ -86,19 +108,22 @@ public class MainActivity extends FragmentActivity {
             InputStream[] inputStreams;
             try {
                 inputStreams=new FileInputStream[]{
-                        openFileInput("BackUp.txt"),
-                        openFileInput("Profile.txt"),
-                        openFileInput("canChange.txt"),
+                        openFileInput(SetCode.BackUpFile),
+                        openFileInput(SetCode.ProfileFile),
+                        openFileInput(SetCode.canChangeFile),
                 };
+                showCodeOnTextView(inputStreams);
             } catch (FileNotFoundException e) {
-                inputStreams=new InputStream[]{
-                        getResources().openRawResource(R.raw.code_1080p_xianyan_anti)
-                };
+                showCodeOnTextView("当前没有画质代码");
             }
-            showCodeOnTextView(inputStreams);
+
         });
         //  写入代码文件按钮监听------------------------------------------------------------
         writeCode.setOnClickListener(v -> {
+            if (isDelete.isChecked()) {
+                System.out.println("checked");
+                deletePak();
+            }
             try {
                 if (Build.VERSION.SDK_INT == 30) {
                     writeCodeMethod(getContentResolver().openOutputStream(
@@ -106,9 +131,9 @@ public class MainActivity extends FragmentActivity {
                             "Android/data/com.tencent.tmgp.pubgmhd/files/UE4Game/ShadowTrackerEx" +
                                     "tra/ShadowTrackerExtra/Saved/Config/Android/UserCustom.ini").getUri()),
                             new InputStream[]{
-                                    openFileInput("BackUp.txt"),
-                                    openFileInput("Profile.txt"),
-                                    openFileInput("canChange.txt")
+                                    openFileInput(SetCode.BackUpFile),
+                                    openFileInput(SetCode.ProfileFile),
+                                    openFileInput(SetCode.canChangeFile)
                             });
                 } else {
                     writeCodeMethod(getContentResolver().openOutputStream(
@@ -116,9 +141,9 @@ public class MainActivity extends FragmentActivity {
                             "Android/data/com.tencent.tmgp.pubgmhd/files/UE4Game/ShadowTrackerEx" +
                                     "tra/ShadowTrackerExtra/Saved/Config/Android/UserCustom.ini").getUri()),
                             new InputStream[]{
-                                    openFileInput("Profile.txt"),
-                                    openFileInput("canChange.txt"),
-                                    openFileInput("BackUp.txt")
+                                    openFileInput(SetCode.ProfileFile),
+                                    openFileInput(SetCode.canChangeFile),
+                                    openFileInput(SetCode.BackUpFile)
                             });
                 }
 
@@ -162,10 +187,10 @@ public class MainActivity extends FragmentActivity {
             //代码文件自动写入内部存储
             try {
                 SetCode.getBackUpCode(getResources().openRawResource(R.raw.const_code),
-                        openFileOutput("BackUp.txt", MODE_PRIVATE));
+                        openFileOutput(SetCode.BackUpFile, MODE_PRIVATE));
                 SetCode.getProfileCode(getResources().openRawResource(R.raw.const_code),
-                        openFileOutput("Profile.txt",MODE_PRIVATE),
-                        openFileOutput("canChange.txt",MODE_PRIVATE)
+                        openFileOutput(SetCode.ProfileFile,MODE_PRIVATE),
+                        openFileOutput(SetCode.canChangeFile,MODE_PRIVATE)
                         );
             } catch (FileNotFoundException e) {
                 e.printStackTrace();
@@ -199,9 +224,9 @@ public class MainActivity extends FragmentActivity {
                         "Android/data/com.tencent.tmgp.pubgmhd/files/UE4Game/ShadowTrackerExtra/ShadowTrackerExtra/Saved/Config/Android/UserCustom.ini");
                 assert documentFile != null;
                 FileInputStream inputStream = (FileInputStream) getContentResolver().openInputStream(documentFile.getUri());
-                FileOutputStream backUp = openFileOutput("BackUp.txt",MODE_PRIVATE);
-                FileOutputStream profile = openFileOutput("Profile.txt",MODE_PRIVATE);
-                FileOutputStream canChange = openFileOutput("canChange.txt",MODE_PRIVATE);
+                FileOutputStream backUp = openFileOutput(SetCode.BackUpFile,MODE_PRIVATE);
+                FileOutputStream profile = openFileOutput(SetCode.ProfileFile,MODE_PRIVATE);
+                FileOutputStream canChange = openFileOutput(SetCode.canChangeFile,MODE_PRIVATE);
                 if (!SetCode.getBackUpCode(inputStream, backUp)) {
                     showCodeOnTextView("无法获取代码文件");
                     backUp.flush();
@@ -224,9 +249,9 @@ public class MainActivity extends FragmentActivity {
                 canChange.close();
                 inputStream.close();
                 showCodeOnTextView(new FileInputStream[]{
-                        openFileInput("BackUp.txt"),
-                        openFileInput("Profile.txt"),
-                        openFileInput("canChange.txt")});
+                        openFileInput(SetCode.BackUpFile),
+                        openFileInput(SetCode.ProfileFile),
+                        openFileInput(SetCode.canChangeFile)});
             } catch (IOException e) {
                 e.printStackTrace();
                 showCodeOnTextView("获取代码失败");
@@ -265,6 +290,7 @@ public class MainActivity extends FragmentActivity {
     private void getPermission(){
         //创建一个记录日志的StringBuilder
         StringBuilder builder = new StringBuilder();
+
         //获取读写权限并判断是否成功
         GetPermissionAndTools.verifyStoragePermissions(this);
         GetPermissionAndTools.judgePermission(this);
@@ -397,9 +423,9 @@ public class MainActivity extends FragmentActivity {
                     "Android/data/com.tencent.tmgp.pubgmhd/files/UE4Game/ShadowTrackerEx" +
                             "tra/ShadowTrackerExtra/Saved/Config/Android/UserCustom.ini").getUri()),
                     new InputStream[]{
-                            openFileInput("BackUp.txt"),
-                            openFileInput("Profile.txt"),
-                            openFileInput("canChange.txt")
+                            openFileInput(SetCode.BackUpFile),
+                            openFileInput(SetCode.ProfileFile),
+                            openFileInput(SetCode.canChangeFile)
                     });
         } catch (FileNotFoundException e) {
             e.printStackTrace();
@@ -412,6 +438,26 @@ public class MainActivity extends FragmentActivity {
                 "com.epicgames.ue4.SplashActivity"));
         startActivity(intent);
 
+    }
+
+    //删除服饰资源包的方法
+    private void deletePak() {
+        DocumentFile pakFile= DocumentFile.fromTreeUri(this,
+                GetPermissionAndTools.getDocumentFile(this,
+                        "Android/data/com.tencent.tmgp.pubgmhd/files/UE4Game/ShadowTrackerExtra/" +
+                                "ShadowTrackerExtra/Saved/Paks/avatarpaks/"
+                ).getUri());
+        if (GetPermissionAndTools.fileCanUse(pakFile)) {
+            System.out.println("ok Can Do Next");
+            assert pakFile != null;
+            for (DocumentFile each : pakFile.listFiles()) {
+                if (GetPermissionAndTools.fileCanUse(each)) {
+                    if ("sign.bin".equals(each.getName())) { continue; }
+                    if(each.delete()){showCodeOnTextView("正在删除服饰资源包，请勿退出程序...");}
+                }
+            }
+            Toast.makeText(this,"服饰资源包删除完毕",Toast.LENGTH_SHORT).show();
+        }
     }
 
     //返回授权状态
@@ -428,6 +474,8 @@ public class MainActivity extends FragmentActivity {
 
             Toast.makeText(this, "授权成功", Toast.LENGTH_SHORT).show();
         }
+
+
     }
 
 

@@ -93,6 +93,13 @@ public class GetPermissionAndTools {
         return "content://com.android.externalstorage.documents/tree/primary%3AAndroid%2Fdata/document/primary%3A" + path2;
     }
 
+    //转换至uriTree的路径
+    public static String changeToTreeUri(String path) {
+        path = path.replace("/storage/emulated/0/", "").replace("/", "%2F");
+        return ("content://com.android.externalstorage.documents/tree/primary%3A" + path);
+
+    }
+
     //直接获取data权限，推荐使用这种方案
     public static void startForRoot(Activity context, int REQUEST_CODE_FOR_DIR) {
         String uri = changeToUri(Environment.getExternalStorageDirectory().getPath());
@@ -130,8 +137,14 @@ public class GetPermissionAndTools {
         return false;
     }
 
+
+
     //判断DocumentFile是否可用
     public static boolean fileCanUse(DocumentFile documentFile) {
+        if (documentFile == null) {
+            Log.e("文件夹错误", "文件夹==null");
+            return false;
+        }
         if (documentFile.exists()) {
             if (!documentFile.canRead()) {
                 Log.e("读文件夹错误", "文件夹不可读");
